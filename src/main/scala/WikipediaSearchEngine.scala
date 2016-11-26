@@ -61,7 +61,7 @@ class CorpusSearchEngine extends Serializable{
     val plainText: RDD[(String, String)] = rawXmls.flatMap(wikiXmlToPlainText)
     println(s"plainText length: ${plainText.count()}")
     val corpus: Array[(String, String)] = plainText.collect()
-    println(s"first document: ${corpus.length}")
+    println(s"first document: ${corpus.head}")
 
     sc.stop()
   }
