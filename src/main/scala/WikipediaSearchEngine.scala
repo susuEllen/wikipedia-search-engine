@@ -11,7 +11,10 @@
 
 //import edu.umd.cloud9.collection.wikipedia.language
 
+import java.io.{FileWriter, BufferedWriter, File}
+
 import org.apache.hadoop.io.{Text, LongWritable}
+import org.apache.spark.storage.StorageLevel
 
 //import com.databricks.spark.xml
 import edu.umd.cloud9.collection.XMLInputFormat
@@ -36,8 +39,11 @@ import edu.umd.cloud9.collection.wikipedia.language.EnglishWikipediaPage
 
 class CorpusSearchEngine extends Serializable{
   // state stored in here
-  val path = "/Users/ellenwong/Development/data/wikidump/enwiki-latest-pages-articles-multistream.xml"
-
+  //val path = "/Users/ellenwong/Development/data/wikidump/enwiki-latest-pages-articles-multistream.xml"
+  val localDirectory = new java.io.File(".").getCanonicalPath
+  val path = localDirectory +  "/enwiki-latest-pages-articles-multistream.xml"
+  val rdd = localDirectory + "/rdd/"
+  val resultFile = localDirectory + "/output.txt"
 
   def run() = {
     // (1) load data
@@ -59,9 +65,20 @@ class CorpusSearchEngine extends Serializable{
       else Some((page.getTitle, page.getContent))
     }
     val plainText: RDD[(String, String)] = rawXmls.flatMap(wikiXmlToPlainText)
+    plainText.saveAsObjectFile(rdd)
+    //plainText.saveAsTextFile(rdd)
+
     println(s"plainText length: ${plainText.count()}")
+//    plainText.persist(StorageLevel.DISK_ONLY)
+//    plainText.checkpoint()
     val corpus: Array[(String, String)] = plainText.collect()
-    println(s"first document: ${corpus.head}")
+
+    //TODO: write doc to disk??
+
+    val outputFile = new File(resultFile)
+    val bw = new BufferedWriter(new FileWriter(outputFile))
+    bw.write(s"first document: ${corpus.head}")
+    bw.close()
 
     sc.stop()
   }
@@ -95,5 +112,12 @@ class CorpusSearchEngine extends Serializable{
   // (7) Calculate Document-Document Relevance
   // (8) Calculate Term-Document Relevance
   // (9) Do some searches from results above
+
+  /*
+  * Notes:
+  *  (1) everything inside map needs to be serializable,
+  *  e.g use anonymous function instead of instance methods, or make sure class method is from a serializable class
+  * (2) collect before accessing an element in RDD
+  * */
 
 }
